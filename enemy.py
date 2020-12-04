@@ -11,15 +11,21 @@ class Enemy(pygame.sprite.Sprite):
         self.width, self.height = bg_size
         self.active = True
         self.hit = False
+        self.speed = 1
+        self.init_pos = (0, 0)
 
     def move(self):
         if self.rect.top < self.height:
             self.rect.top += self.speed
         else:
             self.reset()
+    
+    def inc_speed(self, val):
+        self.speed += val
 
     def reset(self):
-        pass
+        self.active = True
+        self.rect.left, self.rect.bottom = self.init_pos
 
 
 class Small_Enemy(Enemy):
@@ -27,6 +33,7 @@ class Small_Enemy(Enemy):
     def __init__(self, bg_size):
         super().__init__(bg_size)
         self.speed = 2
+        self.score = 1000
 
         self.image = pygame.image.load(
             IMAGE_PATH + 'enemy1.png').convert_alpha()
@@ -38,13 +45,9 @@ class Small_Enemy(Enemy):
         ]
 
         self.rect = self.image.get_rect()
-        self.rect.left, self.rect.bottom = randint(
+        self.init_pos = randint(
             0, self.width - self.rect.width), randint(-5 * self.height, 0)
-
-    def reset(self):
-        self.active = True
-        self.rect.left, self.rect.bottom = randint(
-            0, self.width - self.rect.width), randint(-5 * self.height, 0)
+        self.reset()
 
 
 class Middle_Enemy(Enemy):
@@ -53,7 +56,7 @@ class Middle_Enemy(Enemy):
     def __init__(self, bg_size):
         super().__init__(bg_size)
         self.speed = 1
-        self.energy = __class__.energy
+        self.score = 4000
 
         self.image = pygame.image.load(
             IMAGE_PATH + 'enemy2.png').convert_alpha()
@@ -67,14 +70,13 @@ class Middle_Enemy(Enemy):
             IMAGE_PATH + 'enemy2_hit.png').convert_alpha()
 
         self.rect = self.image.get_rect()
-        self.rect.left, self.rect.bottom = randint(
+        self.init_pos = randint(
             0, self.width - self.rect.width), randint(-10 * self.height, -1 * self.height)
+        self.reset()
 
     def reset(self):
-        self.active = True
+        super().reset()
         self.energy = __class__.energy
-        self.rect.left, self.rect.bottom = randint(
-            0, self.width - self.rect.width), randint(-10 * self.height, -1 * self.height)
 
 
 class Big_Enemy(Enemy):
@@ -83,7 +85,7 @@ class Big_Enemy(Enemy):
     def __init__(self, bg_size):
         super().__init__(bg_size)
         self.speed = 1
-        self.energy = __class__.energy
+        self.score = 8000
 
         self.image_1 = pygame.image.load(
             IMAGE_PATH + 'enemy3_n1.png').convert_alpha()
@@ -99,17 +101,16 @@ class Big_Enemy(Enemy):
         ]
         self.image_hit = pygame.image.load(
             IMAGE_PATH + 'enemy3_hit.png').convert_alpha()
+        self.image = self.image_1
 
         self.rect = self.image_1.get_rect()
-        self.rect.left, self.rect.bottom = randint(
+        self.init_pos = randint(
             0, self.width - self.rect.width), randint(-15 * self.height, -5 * self.height)
-        self.mask = pygame.mask.from_surface(self.image_1)
+        self.reset()
 
     def reset(self):
-        self.active = True
+        super().reset()
         self.energy = __class__.energy
-        self.rect.left, self.rect.bottom = randint(
-            0, self.width - self.rect.width), randint(-15 * self.height, -5 * self.height)
 
 
 class Enemies(pygame.sprite.Group):
@@ -117,6 +118,10 @@ class Enemies(pygame.sprite.Group):
     def __init__(self, name='all'):
         super().__init__()
         self.name = name.strip().lower()
+    
+    def inc_speed(self, val):
+        for enemy in self:
+            enemy.speed += val
 
 
 class AllEnemies(Enemies):
