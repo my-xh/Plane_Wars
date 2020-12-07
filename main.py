@@ -349,11 +349,11 @@ def main():
                     running = False
 
             # 绘制全屏炸弹数量
-            bomb_text = bomb_font.render(f'x {bomb_num}', True, WHITE)
+            bomb_text = bomb_font.render(f'× {bomb_num}', True, WHITE)
             bomb_text_rect = bomb_text.get_rect()
             screen.blit(bomb, (10, height - bomb_rect.height - 10))
             screen.blit(bomb_text, (bomb_rect.width + 20, height -
-                                    bomb_text_rect.height - 10))
+                                    bomb_text_rect.height - 5))
 
             # 切换图片
             if delay % 5 == 0:
