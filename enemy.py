@@ -19,7 +19,7 @@ class Enemy(pygame.sprite.Sprite):
             self.rect.top += self.speed
         else:
             self.reset()
-    
+
     def inc_speed(self, val):
         self.speed += val
 
@@ -56,7 +56,7 @@ class Middle_Enemy(Enemy):
     def __init__(self, bg_size):
         super().__init__(bg_size)
         self.speed = 1
-        self.score = 4000
+        self.score = 6000
 
         self.image = pygame.image.load(
             IMAGE_PATH + 'enemy2.png').convert_alpha()
@@ -85,7 +85,7 @@ class Big_Enemy(Enemy):
     def __init__(self, bg_size):
         super().__init__(bg_size)
         self.speed = 1
-        self.score = 8000
+        self.score = 10000
 
         self.image_1 = pygame.image.load(
             IMAGE_PATH + 'enemy3_n1.png').convert_alpha()
@@ -118,7 +118,7 @@ class Enemies(pygame.sprite.Group):
     def __init__(self, name='all'):
         super().__init__()
         self.name = name.strip().lower()
-    
+
     def inc_speed(self, val):
         for enemy in self:
             enemy.speed += val
