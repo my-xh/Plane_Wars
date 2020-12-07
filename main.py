@@ -126,7 +126,7 @@ def main():
     bomb_font = pygame.font.Font(FONT_PATH + 'font.ttf', 48)
 
     running = True
-    
+
     while running:
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -137,7 +137,7 @@ def main():
                 if event.button == 1 and pause_rect.collidepoint(event.pos):
                     button_sound.play()
                     paused = not paused
-            
+
             elif event.type == MOUSEMOTION:
                 if pause_rect.collidepoint(event.pos):
                     pause_images = pressed_images
@@ -148,12 +148,12 @@ def main():
                 if event.key == K_SPACE:
                     if bomb_num:
                         bomb_num -= 1
+                        use_bomb_sound.play()
                         for enemy in enemies:
                             if enemy.rect.bottom > 0:
                                 enemy.active = False
 
         screen.blit(background, (0, 0))
-        screen.blit(pause_images[paused], pause_rect)
 
         if not paused:
             # 检测用户的键盘操作
@@ -177,8 +177,7 @@ def main():
                 enemies.add_enemies(middle_enemies, 2, bg_size)
                 enemies.add_enemies(big_enemies, 1, bg_size)
                 small_enemies.inc_speed(1)
-                middle_enemies.inc_speed(1)
-            elif level == 2 and score > 100000:
+            elif level == 2 and score > 300000:
                 level = 3
                 upgrade_sound.play()
                 # 增加5架小型飞机、3架中型飞机、2架大型飞机
@@ -187,7 +186,7 @@ def main():
                 enemies.add_enemies(big_enemies, 2, bg_size)
                 small_enemies.inc_speed(1)
                 middle_enemies.inc_speed(1)
-            elif level == 3 and score > 500000:
+            elif level == 3 and score > 600000:
                 level = 4
                 upgrade_sound.play()
                 # 增加5架小型飞机、3架中型飞机、2架大型飞机
@@ -196,7 +195,7 @@ def main():
                 enemies.add_enemies(big_enemies, 2, bg_size)
                 small_enemies.inc_speed(1)
                 middle_enemies.inc_speed(1)
-            elif level == 4 and score > 10000000:
+            elif level == 4 and score > 1000000:
                 level = 5
                 upgrade_sound.play()
                 # 增加5架小型飞机、3架中型飞机、2架大型飞机
@@ -209,7 +208,8 @@ def main():
             # 发射子弹
             if delay % (40 / NORMAL_BULLET_NUM) == 0:
                 normal_bullets[normal_bullet_index].reset(me.rect.midtop)
-                normal_bullet_index = (normal_bullet_index + 1) % NORMAL_BULLET_NUM
+                normal_bullet_index = (
+                    normal_bullet_index + 1) % NORMAL_BULLET_NUM
 
             # 检测子弹是否击中敌机
             for bullet in normal_bullets:
@@ -244,17 +244,17 @@ def main():
                             screen.blit(enemy.image_2, enemy.rect)
                     # 绘制血槽
                     pygame.draw.line(screen, BLACK, (enemy.rect.left, enemy.rect.top - 5),
-                                    (enemy.rect.right, enemy.rect.top - 5), 2)
+                                     (enemy.rect.right, enemy.rect.top - 5), 2)
 
                     # 当生命大于20%显示绿色，否则显示红色
                     energy_remain = enemy.energy / Big_Enemy.energy
                     right_x = enemy.rect.left + enemy.rect.width * energy_remain
                     if energy_remain > 0.2:
                         pygame.draw.line(screen, GREEN, (enemy.rect.left, enemy.rect.top - 5),
-                                        (right_x, enemy.rect.top - 5), 2)
+                                         (right_x, enemy.rect.top - 5), 2)
                     else:
                         pygame.draw.line(screen, RED, (enemy.rect.left, enemy.rect.top - 5),
-                                        (right_x, enemy.rect.top - 5), 2)
+                                         (right_x, enemy.rect.top - 5), 2)
 
                     # 即将出现在画面中，播放音效
                     if enemy.rect.bottom == -50:
@@ -284,17 +284,17 @@ def main():
                         screen.blit(enemy.image, enemy.rect)
                     # 绘制血槽
                     pygame.draw.line(screen, BLACK, (enemy.rect.left, enemy.rect.top - 5),
-                                    (enemy.rect.right, enemy.rect.top - 5), 2)
+                                     (enemy.rect.right, enemy.rect.top - 5), 2)
 
                     # 当生命大于20%显示绿色，否则显示红色
                     energy_remain = enemy.energy / Middle_Enemy.energy
                     right_x = enemy.rect.left + enemy.rect.width * energy_remain
                     if energy_remain > 0.2:
                         pygame.draw.line(screen, GREEN, (enemy.rect.left, enemy.rect.top - 5),
-                                        (right_x, enemy.rect.top - 5), 2)
+                                         (right_x, enemy.rect.top - 5), 2)
                     else:
                         pygame.draw.line(screen, RED, (enemy.rect.left, enemy.rect.top - 5),
-                                        (right_x, enemy.rect.top - 5), 2)
+                                         (right_x, enemy.rect.top - 5), 2)
                 else:
                     # 毁灭
                     if delay % 3 == 0:
@@ -362,6 +362,9 @@ def main():
             delay -= 1
             if not delay:
                 delay = 100
+
+        # 绘制暂停按钮
+        screen.blit(pause_images[paused], pause_rect)
 
         # 绘制分数
         score_text = score_font.render(f'Score: {score}', True, WHITE)
