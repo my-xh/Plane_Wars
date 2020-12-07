@@ -2,22 +2,32 @@ import pygame
 import sys
 import traceback
 from myplane import MyPlane
-from bullet import NormalBullet
+from bullet import NormalBullet, SuperBullet
 from enemy import Small_Enemy, Middle_Enemy, Big_Enemy, Enemies, AllEnemies
+from supply import BulletSupply, BombSupply
 from pygame.locals import *
+from random import *
 
+# 资源路径
 IMAGE_PATH = 'images/'
 SOUND_PATH = 'sound/'
 FONT_PATH = 'font/'
 
 # 普通子弹数量
 NORMAL_BULLET_NUM = 4
+# 超级子弹数量
+SUPER_BULLET_NUM = 8
 
 # 颜色常量
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 WHITE = (255, 255, 255)
+
+# 支援计时
+SUPPLY_TIME = USEREVENT
+# 超级子弹计时
+SUPER_BULLET_TIME = USEREVENT + 1
 
 pygame.init()
 pygame.mixer.init()
@@ -77,11 +87,21 @@ def main():
     # 生成敌方大型飞机
     enemies.add_enemies(big_enemies, 2, bg_size)
 
+    # 标志是否是超级子弹
+    is_super_bullet = False
+
     # 生成普通子弹
     normal_bullets = []
     normal_bullet_index = 0
     for i in range(NORMAL_BULLET_NUM):
         normal_bullets.append(NormalBullet(me.rect.midtop))
+
+    # 生成超级子弹
+    super_bullets = []
+    super_bullet_index = 0
+    for i in range(SUPER_BULLET_NUM // 2):
+        super_bullets.append(SuperBullet((me.rect.centerx - 33, me.rect.centery)))
+        super_bullets.append(SuperBullet((me.rect.centerx + 30, me.rect.centery)))
 
     clock = pygame.time.Clock()
 
@@ -125,6 +145,14 @@ def main():
     bomb_rect = bomb.get_rect()
     bomb_font = pygame.font.Font(FONT_PATH + 'font.ttf', 48)
 
+    # 支援物资
+    bullet_supply = BulletSupply(bg_size)
+    bomb_supply = BombSupply(bg_size)
+    supply = bomb_supply
+
+    # 每30秒投放一次支援物资
+    pygame.time.set_timer(SUPPLY_TIME, 3 * 1000)
+
     running = True
 
     while running:
@@ -137,6 +165,14 @@ def main():
                 if event.button == 1 and pause_rect.collidepoint(event.pos):
                     button_sound.play()
                     paused = not paused
+                    if paused:
+                        pygame.mixer.music.pause()
+                        pygame.mixer.pause()
+                        pygame.time.set_timer(SUPPLY_TIME, 0)
+                    else:
+                        pygame.mixer.music.unpause()
+                        pygame.mixer.unpause()
+                        pygame.time.set_timer(SUPPLY_TIME, 30 * 1000)
 
             elif event.type == MOUSEMOTION:
                 if pause_rect.collidepoint(event.pos):
@@ -152,6 +188,14 @@ def main():
                         for enemy in enemies:
                             if enemy.rect.bottom > 0:
                                 enemy.active = False
+            
+            elif event.type == SUPPLY_TIME:
+                supply_sound.play()
+                supply = choice([bullet_supply, bomb_supply])
+                supply.reset()
+
+            elif event.type == SUPER_BULLET_TIME:
+                is_super_bullet = False
 
         screen.blit(background, (0, 0))
 
@@ -206,13 +250,24 @@ def main():
                 middle_enemies.inc_speed(1)
 
             # 发射子弹
-            if delay % (40 / NORMAL_BULLET_NUM) == 0:
-                normal_bullets[normal_bullet_index].reset(me.rect.midtop)
-                normal_bullet_index = (
-                    normal_bullet_index + 1) % NORMAL_BULLET_NUM
+            if is_super_bullet:
+                bullets = super_bullets
+                if delay % (40 / SUPER_BULLET_NUM * 2) == 0:
+                    bullet_sound.play()
+                    bullets[super_bullet_index].reset((me.rect.centerx - 33, me.rect.centery))
+                    bullets[super_bullet_index + 1].reset((me.rect.centerx + 30, me.rect.centery))
+                    super_bullet_index = (
+                        super_bullet_index + 2) % SUPER_BULLET_NUM
+            else:
+                bullets = normal_bullets
+                if delay % (40 / NORMAL_BULLET_NUM) == 0:
+                    bullet_sound.play()
+                    bullets[normal_bullet_index].reset(me.rect.midtop)
+                    normal_bullet_index = (
+                        normal_bullet_index + 1) % NORMAL_BULLET_NUM
 
             # 检测子弹是否击中敌机
-            for bullet in normal_bullets:
+            for bullet in bullets:
                 if bullet.active:
                     bullet.move()
                     screen.blit(bullet.image, bullet.rect)
@@ -228,6 +283,22 @@ def main():
                                     enemy.active = False
                             else:
                                 enemy.active = False
+
+            # 绘制支援物资
+            if supply.active:
+                supply.move()
+                screen.blit(supply.image, supply.rect)
+                if pygame.sprite.collide_mask(supply, me):
+                    supply.active = False
+                    if supply is bomb_supply:
+                        get_bomb_sound.play()
+                        if bomb_num < 3:
+                            bomb_num += 1
+                    elif supply is bullet_supply:
+                        get_bullet_sound.play()
+                        is_super_bullet = True
+                        # 超级子弹持续时间18秒
+                        pygame.time.set_timer(SUPER_BULLET_TIME, 18 * 1000)
 
             # 绘制敌方大型飞机
             for enemy in big_enemies:
