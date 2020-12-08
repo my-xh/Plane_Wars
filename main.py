@@ -28,6 +28,8 @@ WHITE = (255, 255, 255)
 SUPPLY_TIME = USEREVENT
 # 超级子弹计时
 SUPER_BULLET_TIME = USEREVENT + 1
+# 无敌时间计时
+INVINCIBLE_TIME = USEREVENT + 2
 
 pygame.init()
 pygame.mixer.init()
@@ -66,6 +68,21 @@ upgrade_sound.set_volume(0.2)
 use_bomb_sound = pygame.mixer.Sound(SOUND_PATH + 'use_bomb.wav')
 use_bomb_sound.set_volume(0.2)
 
+
+# 加载记录
+def load_record():
+    try:
+        with open('record.txt', 'r') as f:
+            best_record = int(f.read())
+    except FileNotFoundError:
+        save_record(0)
+        best_record = 0
+    return best_record
+
+# 保存记录
+def save_record(score):
+    with open('record.txt', 'w') as f:
+        f.write(str(score))
 
 def main():
     pygame.mixer.music.play(-1)
@@ -153,6 +170,18 @@ def main():
     # 每30秒投放一次支援物资
     pygame.time.set_timer(SUPPLY_TIME, 30 * 1000)
 
+    # 最终得分字体设置
+    record_font = pygame.font.Font(FONT_PATH + 'font.ttf', 48)
+
+    # 游戏结束界面
+    again_image = pygame.image.load(IMAGE_PATH + 'again.png').convert_alpha()
+    again_rect = again_image.get_rect()
+    gameover_image = pygame.image.load(IMAGE_PATH + 'gameover.png').convert_alpha()
+    gameover_rect = gameover_image.get_rect()
+
+    # 用于游戏结束时做单次处理
+    gameover_processed = False
+
     running = True
 
     while running:
@@ -197,10 +226,14 @@ def main():
             elif event.type == SUPER_BULLET_TIME:
                 is_super_bullet = False
                 pygame.time.set_timer(SUPER_BULLET_TIME, 0)
+            
+            elif event.type == INVINCIBLE_TIME:
+                me.is_invincible = False
+                pygame.time.set_timer(INVINCIBLE_TIME, 0)
 
         screen.blit(background, (0, 0))
 
-        if not paused:
+        if me.life_num and not paused:
             # 检测用户的键盘操作
             key_pressed = pygame.key.get_pressed()
 
@@ -399,7 +432,7 @@ def main():
             # 检测我方飞机是否被撞
             enemies_down = pygame.sprite.spritecollide(
                 me, enemies, False, pygame.sprite.collide_mask)
-            if enemies_down:
+            if enemies_down and not me.is_invincible:
                 me.active = False
                 for enemy in enemies_down:
                     enemy.active = False
@@ -412,13 +445,13 @@ def main():
                     screen.blit(me.image_2, me.rect)
             else:
                 # 毁灭
-                screen.blit(me.destroy_images[
-                            (me_destroy_index) // 3 % 4], me.rect)
-                me_destroy_index += 1
-                if me_destroy_index == 12:
-                    me_down_sound.play()
-                    pygame.time.delay(1000)
-                    running = False
+                if delay % 3 == 0:
+                    screen.blit(me.destroy_images[me_destroy_index], me.rect)
+                    me_destroy_index  = (me_destroy_index + 1) % 4
+                    if me_destroy_index == 0:
+                        me_down_sound.play()
+                        me.reset()
+                        pygame.time.set_timer(INVINCIBLE_TIME, 3 * 1000)
 
             # 绘制全屏炸弹数量
             bomb_text = bomb_font.render(f'× {bomb_num}', True, WHITE)
@@ -426,6 +459,15 @@ def main():
             screen.blit(bomb, (10, height - bomb_rect.height - 10))
             screen.blit(bomb_text, (bomb_rect.width + 20, height -
                                     bomb_text_rect.height - 5))
+
+            # 绘制剩余生命数量
+            for i in range(me.life_num):
+                me.life_rect.right = width - i * me.life_rect.width - 5
+                screen.blit(me.life_image, me.life_rect)
+
+            # 绘制分数
+            score_text = score_font.render(f'Score: {score}', True, WHITE)
+            screen.blit(score_text, (10, 5))
 
             # 切换图片
             if delay % 5 == 0:
@@ -435,13 +477,59 @@ def main():
             if not delay:
                 delay = 100
 
-        # 绘制暂停按钮
-        screen.blit(pause_images[paused], pause_rect)
+        if not me.life_num:
+            # 游戏结束时
+            if not gameover_processed:
+                # 执行一次以下操作：关闭所有音效和定时器，获取最高分，设置结束界面图像位置
+                me_down_sound.play()
+                pygame.time.delay(1000)
+                gameover_processed = True
+                pygame.mixer.music.stop()
+                pygame.mixer.stop()
+                pygame.time.set_timer(SUPPLY_TIME, 0)
 
-        # 绘制分数
-        score_text = score_font.render(f'Score: {score}', True, WHITE)
-        screen.blit(score_text, (10, 5))
+                best_record = load_record()
 
+                if score > best_record:
+                    best_record = score
+                    save_record(score)
+
+                best_record_text = record_font.render(f'Best : {best_record}', True, WHITE)
+                best_record_rect = best_record_text.get_rect()
+                best_record_rect.left, best_record_rect.top = (5, 5)
+
+                record_text_1 = record_font.render('Your Score', True, WHITE)
+                record_rect_1 = record_text_1.get_rect()
+                record_rect_1.left, record_rect_1.top = (
+                    width - record_rect_1.width) // 2, height // 3
+
+                record_text_2 = record_font.render(f'{score}', True, WHITE)
+                record_rect_2 = record_text_2.get_rect()
+                record_rect_2.left, record_rect_2.top = (width - record_rect_2.width) // 2, record_rect_1.bottom + 10
+
+                again_rect.left, again_rect.top = (
+                    width - again_rect.width) // 2, record_rect_2.bottom + 10
+                gameover_rect.left, gameover_rect.top = (
+                    width - gameover_rect.width) // 2, again_rect.bottom + 10
+
+            # 绘制游戏结束界面
+            screen.blit(best_record_text, best_record_rect)
+            screen.blit(record_text_1, record_rect_1)
+            screen.blit(record_text_2, record_rect_2)
+            screen.blit(again_image, again_rect)
+            screen.blit(gameover_image, gameover_rect)
+
+            # 检测用户点击的按钮
+            if pygame.mouse.get_pressed()[0]:
+                pos = pygame.mouse.get_pos()
+                if again_rect.collidepoint(pos):
+                    return True
+                elif gameover_rect.collidepoint(pos):
+                    return False
+        else:
+            # 绘制暂停按钮
+            screen.blit(pause_images[paused], pause_rect)
+        
         pygame.display.flip()
 
         clock.tick(60)
@@ -449,7 +537,12 @@ def main():
 
 if __name__ == '__main__':
     try:
-        main()
+        status = main()
+        while status:
+            status = main()
+        else:
+            pygame.quit()
+            sys.exit()
     except SystemExit:
         pass
     except:
