@@ -151,7 +151,7 @@ def main():
     supply = bomb_supply
 
     # 每30秒投放一次支援物资
-    pygame.time.set_timer(SUPPLY_TIME, 3 * 1000)
+    pygame.time.set_timer(SUPPLY_TIME, 30 * 1000)
 
     running = True
 
@@ -196,6 +196,7 @@ def main():
 
             elif event.type == SUPER_BULLET_TIME:
                 is_super_bullet = False
+                pygame.time.set_timer(SUPER_BULLET_TIME, 0)
 
         screen.blit(background, (0, 0))
 
