@@ -10,6 +10,8 @@ class MyPlane(pygame.sprite.Sprite):
         self.width, self.height = bg_size
         self.speed = 10
         self.active = True
+        self.life_num = 3           # 我方生命数量
+        self.is_invincible = False  # 是否无敌
 
         self.image_1 = pygame.image.load(
             IMAGE_PATH + 'me1.png').convert_alpha()
@@ -21,10 +23,14 @@ class MyPlane(pygame.sprite.Sprite):
             pygame.image.load(IMAGE_PATH + 'me_destroy_3.png').convert_alpha(),
             pygame.image.load(IMAGE_PATH + 'me_destroy_4.png').convert_alpha(),
         ]
+        self.life_image = pygame.image.load(IMAGE_PATH + 'life.png').convert_alpha()
 
         self.rect = self.image_1.get_rect()
         self.rect.left, self.rect.bottom = (
             self.width - self.rect.width) // 2, self.height - 60
+        self.life_rect = self.life_image.get_rect()
+        self.life_rect.bottom = self.height - 10
+
         self.image = self.image_1
 
     def move_up(self):
@@ -50,3 +56,16 @@ class MyPlane(pygame.sprite.Sprite):
             self.rect.right += self.speed
         else:
             self.rect.right = self.width
+
+    def reset(self):
+        if self.life_num:
+            self.life_num -= 1
+            self.active = True
+            self.is_invincible = True
+            self.rect.left, self.rect.bottom = (
+                self.width - self.rect.width) // 2, self.height - 60
+        else:
+            self.destroy()
+
+    def destroy(self):
+        self.active = False
