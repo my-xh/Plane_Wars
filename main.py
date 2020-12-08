@@ -361,9 +361,12 @@ def main():
                         pygame.draw.line(screen, RED, (enemy.rect.left, enemy.rect.top - 5),
                                          (right_x, enemy.rect.top - 5), 2)
 
-                    # 即将出现在画面中，播放音效
                     if enemy.rect.bottom == -50:
+                        # 即将出现在画面中，播放音效
                         enemy3_flying_sound.play(-1)
+                    elif enemy.rect.top >= height:
+                        # 消失在画面中，停止播放音效
+                        enemy3_flying_sound.stop()
                 else:
                     # 毁灭
                     if delay % 3 == 0:
